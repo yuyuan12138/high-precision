@@ -221,19 +221,22 @@ namespace Biginteger{
         return s;
     }
 
-    BigInteger add_abs(const Biginteger::BigInteger& a, const Biginteger::BigInteger& b) {
+    BigInteger add_abs(const BigInteger& a, const BigInteger& b) {
         BigInteger result;
         size_t max_len = std::max(a.digits.size(), b.digits.size());
+        result.digits.resize(max_len + 1, 0); // 预分配
+        
         int carry = 0;
-
         for (size_t i = 0; i < max_len || carry; ++i) {
             int sum = carry;
             if (i < a.digits.size()) sum += a.digits[i];
             if (i < b.digits.size()) sum += b.digits[i];
             
             carry = sum / 10;
-            result.digits.push_back(sum % 10);
+            result.digits[i] = sum % 10; // 直接通过索引赋值
         }
+        
+        remove_leading_zeros(result);
         return result;
     }
 
@@ -364,6 +367,86 @@ namespace Biginteger{
         remove_leading_zeros(result);
         
         if (result.digits.size() == 1 && result.digits[0] == 0) {
+            result.is_negative = false;
+        }
+        return result;
+    }
+
+    void fft(std::vector<std::complex<double>>& a, bool inv){
+        int n = a.size();
+        if (n == 1) {
+            return;
+        }
+        
+        //分治
+        std::vector<std::complex<double>> a0(n / 2), a1(n / 2);
+        for (int i = 0, j = 0; i < n; i += 2, j++) {
+            a0[j] = a[i];
+            a1[j] = a[i + 1];
+        }
+        fft(a0, inv);
+        fft(a1, inv);
+        
+        //FFT
+        double angle = 2 * PI / n * (inv ? -1 : 1);
+        std::complex<double> w(1), wn(cos(angle), sin(angle));
+        for (int i = 0; i < n / 2; i++) {
+            a[i] = a0[i] + w * a1[i];
+            a[i + n / 2] = a0[i] - w * a1[i];
+            w *= wn;
+        }
+    }
+
+    BigInteger FFT_multiply(BigInteger a, BigInteger b){
+        if ((a.digits.size() == 1 && a.digits[0] == 0) ||
+            (b.digits.size() == 1 && b.digits[0] == 0)) {
+            return create_from_longlong(0);
+        }
+
+        int n = 1;
+        while (n < a.digits.size() + b.digits.size()) {
+            n *= 2;
+        }
+
+        a.digits.resize(n); b.digits.resize(n);
+        std::vector<std::complex<double>> c(n), d(n);
+
+        for (int i = 0; i < n; i++) {
+            c[i] = std::complex<double>(a.digits[i], 0);
+            d[i] = std::complex<double>(b.digits[i], 0);
+        }
+
+        fft(c, false), fft(d, false);
+        for (int i = 0; i < n; i++) {
+            c[i] *= d[i];
+        }
+        
+        fft(c, true);
+        
+        std::vector<int> res(n);
+        int carry = 0;
+        for (int i = 0; i < n; i++) {
+            res[i] = (int)(c[i].real() / n + 0.5);
+            res[i] += carry;
+            carry = res[i] / 10;
+            res[i] %= 10;
+        }
+        
+        // int carry = 0;
+        // for (int i = 0; i < n; i++) {
+        //     res[i] += carry;
+        //     carry = res[i] / 10;
+        //     res[i] %= 10;
+        // }
+        
+        while (res.size() > 1 && res.back() == 0) {
+            res.pop_back();
+        }
+        BigInteger result;
+        result.digits = res;
+        if (a.is_negative + b.is_negative == 1){
+            result.is_negative = true;
+        }else{
             result.is_negative = false;
         }
         return result;

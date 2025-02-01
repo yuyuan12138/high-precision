@@ -3,8 +3,8 @@
 
 void benchmark() {
 
-    std::string big_num1(100000, '0');
-    std::string big_num2(10000, '0');
+    std::string big_num1(15, '0');
+    std::string big_num2(15, '0');
     for (auto& c : big_num1) c = '0' + rand()%10;
     for (auto& c : big_num2) c = '0' + rand()%10;
     
@@ -15,8 +15,8 @@ void benchmark() {
     Biginteger::BigInteger c1 = Biginteger::multiply_abs(a, b);  // 普通乘法
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << "Normal: " 
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()
-              << "ms\n";
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()
+            << "ms\n";
     
     start = std::chrono::high_resolution_clock::now();
     Biginteger::BigInteger c2 = Biginteger::karatsuba(a, b);    // Karatsuba
@@ -31,10 +31,32 @@ void benchmark() {
     std::cout << "Karatsuba+AVX512: " 
               << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()
               << "ms\n";
+
+    start = std::chrono::high_resolution_clock::now();
+    Biginteger::BigInteger c4 = FFT_multiply(a, b);  // FFT
+    end = std::chrono::high_resolution_clock::now();
+    std::cout << "FFT_multiply: " 
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()
+              << "ms\n";
     
     // 验证结果一致性
-    if (c1.digits != c2.digits) {
+    if ( c4.digits != c3.digits) {
         std::cerr << "Result mismatch!\n";
+    }
+    for(auto& x: c1.digits){
+        std::cout << x;
+    }
+    std::cout << std::endl;
+    for(auto& x: c2.digits){
+        std::cout << x;
+    }
+    std::cout << std::endl;
+    for(auto& x: c3.digits){
+        std::cout << x;
+    }
+    std::cout << std::endl;
+    for(auto& x: c4.digits){
+        std::cout << x;
     }
 }
 

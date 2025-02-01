@@ -6,16 +6,21 @@
 #include <algorithm>
 #include <stdexcept>
 #include <immintrin.h>
-
+#include <cmath>
+#include <complex>
 
 namespace Biginteger{
+    
     
     struct BigInteger {
         std::vector<int> digits;  // 低位在前存储
         bool is_negative = false;
     };
-    const size_t KARATSUBA_THRESHOLD = 32;
 
+    const size_t KARATSUBA_THRESHOLD = 32;
+    const double PI = acos(-1.0);
+
+    void fft(std::vector<std::complex<double>>& a, bool inv);
     void remove_leading_zeros(BigInteger& num);
     void pad_zeros(BigInteger& num, size_t target_len);
     BigInteger get_lower(const BigInteger& num, size_t n);
@@ -36,6 +41,7 @@ namespace Biginteger{
     BigInteger multiply_abs(const BigInteger& a, const BigInteger &b);
     BigInteger karatsuba(const BigInteger& a, const BigInteger& b);
     BigInteger karatsuba_avx512(const BigInteger& a, const BigInteger& b);
+    BigInteger FFT_multiply(BigInteger a, BigInteger b);
 
     BigInteger operator+(const BigInteger& a, const BigInteger& b);
     BigInteger operator-(const BigInteger& a, const BigInteger& b);
