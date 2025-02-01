@@ -7,3 +7,5 @@
     cmake ..
     make
     ./high-precision
+
+TODO: avx512 has somethings wrong.
