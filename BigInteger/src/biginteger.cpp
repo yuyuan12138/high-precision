@@ -192,7 +192,7 @@ namespace Biginteger{
         return 0;
     }
 
-    BigInteger create_from_string(const std::string& s) {
+    BigInteger from_string(const std::string& s) {
         BigInteger num;
         if (s.empty()) throw std::invalid_argument("Empty string");
         
@@ -276,7 +276,7 @@ namespace Biginteger{
         return result;
     }
 
-    BigInteger create_from_longlong(long long x) {
+    BigInteger from_longlong(long long x) {
         BigInteger num;
         if (x < 0) {
             num.is_negative = true;
@@ -301,7 +301,7 @@ namespace Biginteger{
         const BigInteger& neg = a.is_negative ? a : b;
         
         int cmp = compare_abs(a, b);
-        if (cmp == 0) return create_from_longlong(0);  // 相等时返回0
+        if (cmp == 0) return from_longlong(0);  // 相等时返回0
         
         if (cmp > 0) {
             BigInteger result = sub_abs(pos, absolute(neg));
@@ -352,7 +352,7 @@ namespace Biginteger{
     BigInteger operator*(const BigInteger& a, const BigInteger& b) {
         if ((a.digits.size() == 1 && a.digits[0] == 0) ||
             (b.digits.size() == 1 && b.digits[0] == 0)) {
-            return create_from_longlong(0);
+            return from_longlong(0);
         }
 
         BigInteger result;
@@ -400,7 +400,7 @@ namespace Biginteger{
     BigInteger FFT_multiply(BigInteger a, BigInteger b){
         if ((a.digits.size() == 1 && a.digits[0] == 0) ||
             (b.digits.size() == 1 && b.digits[0] == 0)) {
-            return create_from_longlong(0);
+            return from_longlong(0);
         }
 
         int n = 1;
@@ -449,6 +449,37 @@ namespace Biginteger{
         }else{
             result.is_negative = false;
         }
+        return result;
+    }
+
+    long long to_longlong(BigInteger& a){
+        remove_leading_zeros(a);
+        long long result = 0;
+
+        std::string s_a = to_string(a);
+        try
+        {
+            long long tmp = std::stoll(s_a);
+            if ( std::numeric_limits<long long>::max() < tmp )
+            {
+                throw std::out_of_range( "Too big number!" );
+            }
+            result = tmp;
+        }
+        catch ( const std::out_of_range &e )
+        {
+            std::cout << e.what() << '\n';
+        }
+
+        return result;
+    }
+
+    std::string to_string(BigInteger& a){
+        std::string result;
+        for(auto& x: a.digits){
+            result.push_back(char(x) + '0');
+        }
+        std::reverse(result.begin(), result.end());
         return result;
     }
 

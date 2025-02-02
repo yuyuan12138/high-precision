@@ -8,6 +8,7 @@
 #include <immintrin.h>
 #include <cmath>
 #include <complex>
+#include <limits>
 
 namespace Biginteger{
     
@@ -28,12 +29,12 @@ namespace Biginteger{
     BigInteger shift_left(const BigInteger& num, size_t shift);
 
     int compare_abs(const BigInteger& a, const BigInteger& b);
-    BigInteger create_from_longlong(long long x = 0);
+    BigInteger from_longlong(long long x = 0);
 
     BigInteger absolute(const BigInteger& num);
     BigInteger negate(const BigInteger& num);
 
-    BigInteger create_from_string(const std::string& s);
+    BigInteger from_string(const std::string& s);
     std::string to_string(const BigInteger& num);
 
     BigInteger add_abs(const Biginteger::BigInteger& a, const Biginteger::BigInteger& b);
@@ -52,5 +53,7 @@ namespace Biginteger{
     void add_with_avx512(BigInteger& result, const BigInteger& a, const BigInteger& b);
     void multiply_avx512(BigInteger& result, const BigInteger& a, const BigInteger& b);
     
+    long long to_longlong(BigInteger& a);
+    std::string to_string(BigInteger& a);
 }
 
