@@ -43,12 +43,15 @@ namespace Biginteger{
     BigInteger karatsuba(const BigInteger& a, const BigInteger& b);
     BigInteger karatsuba_avx512(const BigInteger& a, const BigInteger& b);
     BigInteger FFT_multiply(BigInteger a, BigInteger b);
+    BigInteger divide(const BigInteger& dividend, const BigInteger& divisor, BigInteger& remainder);
 
     BigInteger operator+(const BigInteger& a, const BigInteger& b);
     BigInteger operator-(const BigInteger& a, const BigInteger& b);
     BigInteger operator*(const BigInteger& a, const BigInteger& b);
     bool operator<(const BigInteger& a, const BigInteger& b);
     bool operator==(const BigInteger& a, const BigInteger& b);
+    BigInteger operator/(const BigInteger& a, const BigInteger& b);
+    BigInteger operator%(const BigInteger& a, const BigInteger& b);
 
     void add_with_avx512(BigInteger& result, const BigInteger& a, const BigInteger& b);
     void multiply_avx512(BigInteger& result, const BigInteger& a, const BigInteger& b);

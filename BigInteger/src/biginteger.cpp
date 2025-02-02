@@ -483,4 +483,90 @@ namespace Biginteger{
         return result;
     }
 
+    const BigInteger BigIntegerZero = from_longlong(0);
+
+    BigInteger divide(const BigInteger& dividend, const BigInteger& divisor, BigInteger& remainder) {
+        // 处理除数为零的情况
+        if (compare_abs(divisor, BigIntegerZero) == 0) {
+            throw std::invalid_argument("Division by zero");
+        }
+
+        // 确定符号
+        bool quotient_negative = dividend.is_negative != divisor.is_negative;
+        BigInteger a = absolute(dividend);
+        BigInteger b = absolute(divisor);
+
+        // 特殊情况处理：被除数小于除数
+        if (compare_abs(a, b) < 0) {
+            remainder = a;
+            remainder.is_negative = dividend.is_negative;
+            return BigIntegerZero;
+        }
+
+        // 将a和b的digits转为高位在前
+        std::vector<int> a_digits_high(a.digits.rbegin(), a.digits.rend());
+        std::vector<int> b_digits_high(b.digits.rbegin(), b.digits.rend());
+
+        std::vector<int> quotient_digits_high;
+        remainder = BigIntegerZero;
+
+        // 逐位处理被除数
+        for (int digit : a_digits_high) {
+            // 余数 = 余数 * 10 + 当前位
+            remainder.digits.insert(remainder.digits.begin(), 0); // 乘以10
+            remainder.digits[0] = digit; // 加当前位
+            remove_leading_zeros(remainder);
+
+            // 确定商的当前位
+            int q = 0;
+            if (compare_abs(remainder, b) >= 0) {
+                // 二分法寻找最大q使得 b * q <= remainder
+                int low = 0, high = 9;
+                while (low <= high) {
+                    int mid = (low + high) / 2;
+                    BigInteger product = multiply_abs(b, from_longlong(mid));
+                    if (compare_abs(product, remainder) <= 0) {
+                        q = mid;
+                        low = mid + 1;
+                    } else {
+                        high = mid - 1;
+                    }
+                }
+                // 更新余数
+                BigInteger product = multiply_abs(b, from_longlong(q));
+                remainder = sub_abs(remainder, product);
+            }
+            quotient_digits_high.push_back(q);
+        }
+
+        // 去除商的前导零
+        reverse(quotient_digits_high.begin(), quotient_digits_high.end());
+        while (quotient_digits_high.size() > 1 && quotient_digits_high.back() == 0) {
+            quotient_digits_high.pop_back();
+        }
+        reverse(quotient_digits_high.begin(), quotient_digits_high.end());
+
+        // 构造结果
+        BigInteger quotient;
+        quotient.digits = quotient_digits_high;
+        quotient.is_negative = quotient_negative;
+        remove_leading_zeros(quotient);
+
+        // 设置余数的符号
+        remainder.is_negative = dividend.is_negative;
+        remove_leading_zeros(remainder);
+
+        return quotient;
+    }
+
+    BigInteger operator/(const BigInteger& a, const BigInteger& b) {
+        BigInteger remainder;
+        return divide(a, b, remainder);
+    }
+    BigInteger operator%(const BigInteger& a, const BigInteger& b) {
+        BigInteger remainder;
+        divide(a, b, remainder);
+        return remainder;
+    }
+
 }

@@ -8,4 +8,4 @@
     make
     ./high-precision
 
-TODO: avx512 has somethings wrong.
+The api of the repo is in doc/

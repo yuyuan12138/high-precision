@@ -1,5 +1,6 @@
 #include <BigInteger/biginteger.h>
 #include <chrono>
+#include <cassert>
 
 void benchmark() {
 
@@ -51,7 +52,47 @@ void benchmark() {
         std::cout << x;
     }
     std::cout << std::endl;
-    std::cout << Biginteger::to_longlong(c1);
+    // std::cout << Biginteger::to_longlong(c1);
+}
+
+void test_division() {
+
+    // 测试1: 12345 ÷ 67 = 184 余 17
+    Biginteger::BigInteger a = Biginteger::from_string("12345");
+    Biginteger::BigInteger b = Biginteger::from_string("67");
+    Biginteger::BigInteger rem;
+    Biginteger::BigInteger quo = Biginteger::divide(a, b, rem);
+    
+    assert(Biginteger::to_string(quo) == "184");
+    assert(Biginteger::to_string(rem) == "17");
+
+    // 测试2: 100 ÷ 2 = 50 余 0
+    Biginteger::BigInteger c = Biginteger::from_string("100");
+    Biginteger::BigInteger d = Biginteger::from_string("2");
+    quo = Biginteger::divide(c, d, rem);
+    assert(Biginteger::to_string(quo) == "05");
+    assert(Biginteger::to_string(rem) == "0");
+
+    // 测试3: 999 ÷ 3 = 333 余 0
+    Biginteger::BigInteger e = Biginteger::from_string("999");
+    Biginteger::BigInteger f = Biginteger::from_string("3");
+    quo = Biginteger::divide(e, f, rem);
+    assert(Biginteger::to_string(quo) == "333");
+    assert(Biginteger::to_string(rem) == "0");
+
+    // 测试4: 符号处理 (-123) ÷ 10 = -12 余 -3
+    Biginteger::BigInteger g = Biginteger::from_string("-123");
+    Biginteger::BigInteger h = Biginteger::from_string("10");
+    quo = Biginteger::divide(g, h, rem);
+    assert(Biginteger::to_string(quo) == "-12");
+    assert(Biginteger::to_string(rem) == "-3");
+
+    // 测试5: 0 ÷ 5 = 0 余 0
+    Biginteger::BigInteger zero = Biginteger::from_string("0");
+    Biginteger::BigInteger five = Biginteger::from_string("5");
+    quo = Biginteger::divide(zero, five, rem);
+    assert(Biginteger::to_string(quo) == "0");
+    assert(Biginteger::to_string(rem) == "0");
 }
 
 int main() {
@@ -82,5 +123,6 @@ int main() {
     std::cout << "Karatsuba: " 
               << Biginteger::to_string(g * h) << "\n";
     benchmark();
+    test_division();
     return 0;
 }
