@@ -218,6 +218,8 @@ namespace Biginteger{
             s += '-';
         for (auto it = num.digits.rbegin(); it != num.digits.rend(); ++it)
             s += std::to_string(*it);
+        
+        // std::reverse(s.begin(), s.end());
         return s;
     }
 
@@ -479,18 +481,18 @@ namespace Biginteger{
         return result;
     }
 
-    std::string to_string(BigInteger& a){
-        std::string result;
+    // std::string to_string(BigInteger& a){
+    //     std::string result;
         
-        for(auto& x: a.digits){
-            result.push_back(char(x) + '0');
-        }
-        if(a.is_negative){
-            result.push_back('-');
-        }
-        std::reverse(result.begin(), result.end());
-        return result;
-    }
+    //     for(auto& x: a.digits){
+    //         result.push_back(char(x) + '0');
+    //     }
+    //     if(a.is_negative){
+    //         result.push_back('-');
+    //     }
+    //     std::reverse(result.begin(), result.end());
+    //     return result;
+    // }
 
     const BigInteger BigIntegerZero = from_longlong(0);
 

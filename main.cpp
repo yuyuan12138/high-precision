@@ -96,10 +96,7 @@ void test_division() {
     assert(Biginteger::to_string(quo) == "0");
     assert(Biginteger::to_string(rem) == "0");
 
-    auto tmp = Biginteger::to_string(g % h);
-    for(auto& x: tmp){
-        std::cout << x;
-    }
+
 }
 
 int main() {

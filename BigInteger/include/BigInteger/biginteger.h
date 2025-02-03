@@ -36,7 +36,7 @@ namespace Biginteger{
     BigInteger negate(const BigInteger& num);
 
     BigInteger from_string(const std::string& s);
-    std::string to_string(const BigInteger& num);
+    // std::string to_string(const BigInteger& num);
 
     BigInteger add_abs(const Biginteger::BigInteger& a, const Biginteger::BigInteger& b);
     BigInteger sub_abs(const BigInteger& a, const BigInteger& b);
@@ -58,6 +58,6 @@ namespace Biginteger{
     void multiply_avx512(BigInteger& result, const BigInteger& a, const BigInteger& b);
     
     long long to_longlong(BigInteger& a);
-    std::string to_string(BigInteger& a);
+    std::string to_string(const BigInteger& num);
 }
 
