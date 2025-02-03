@@ -19,6 +19,7 @@ namespace Biginteger{
     };
 
     const size_t KARATSUBA_THRESHOLD = 32;
+    const size_t FFT_THRESHOLD = 64;
     const double PI = acos(-1.0);
 
     void fft(std::vector<std::complex<double>>& a, bool inv);

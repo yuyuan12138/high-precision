@@ -356,12 +356,17 @@ namespace Biginteger{
         }
 
         BigInteger result;
-        if (a.digits.size() < KARATSUBA_THRESHOLD || 
-            b.digits.size() < KARATSUBA_THRESHOLD) {
-            result = multiply_abs(a, b);
-        } else {
-            result = karatsuba(a, b);
-        }
+        // if (a.digits.size() < KARATSUBA_THRESHOLD || 
+        //     b.digits.size() < KARATSUBA_THRESHOLD) {
+        //     result = multiply_abs(a, b);
+        // } else if(a.digits.size() >= FFT_THRESHOLD &&
+        //             b.digits.size() >= FFT_THRESHOLD){
+        //     result = FFT_multiply(a, b);
+        // }else{
+        //     // result = karatsuba(a, b);
+        //     result = FFT_multiply(a, b);
+        // }
+        result = FFT_multiply(a, b);
 
         result.is_negative = a.is_negative != b.is_negative;
         remove_leading_zeros(result);
@@ -476,8 +481,12 @@ namespace Biginteger{
 
     std::string to_string(BigInteger& a){
         std::string result;
+        
         for(auto& x: a.digits){
             result.push_back(char(x) + '0');
+        }
+        if(a.is_negative){
+            result.push_back('-');
         }
         std::reverse(result.begin(), result.end());
         return result;
@@ -541,12 +550,11 @@ namespace Biginteger{
 
         // 去除商的前导零
         reverse(quotient_digits_high.begin(), quotient_digits_high.end());
-        while (quotient_digits_high.size() > 1 && quotient_digits_high.back() == 0) {
-            quotient_digits_high.pop_back();
-        }
-        reverse(quotient_digits_high.begin(), quotient_digits_high.end());
-
-        // 构造结果
+        // while (quotient_digits_high.size() > 1 && quotient_digits_high.back() == 0) {
+        //     quotient_digits_high.pop_back();
+        // }
+        // reverse(quotient_digits_high.begin(), quotient_digits_high.end());
+        
         BigInteger quotient;
         quotient.digits = quotient_digits_high;
         quotient.is_negative = quotient_negative;
