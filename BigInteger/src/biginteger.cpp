@@ -83,8 +83,8 @@ namespace Biginteger{
     BigInteger get_lower(const BigInteger& num, size_t n) {
         BigInteger result;
         result.digits.resize(std::min(n, num.digits.size()));
-        std::copy(num.digits.begin(), 
-                num.digits.begin() + result.digits.size(),
+        std::copy_n(num.digits.begin(),
+                result.digits.size(),
                 result.digits.begin());
         return result;
     }
@@ -111,7 +111,7 @@ namespace Biginteger{
     }
 
     BigInteger karatsuba(const BigInteger& a, const BigInteger& b) {
-        size_t len = std::max(a.digits.size(), b.digits.size());
+        const size_t len = std::max(a.digits.size(), b.digits.size());
         
         if (len < KARATSUBA_THRESHOLD)
             return multiply_abs(a, b);
@@ -142,7 +142,7 @@ namespace Biginteger{
     }
 
     BigInteger karatsuba_avx512(const BigInteger& a, const BigInteger& b) {
-        size_t len = std::max(a.digits.size(), b.digits.size());
+        const size_t len = std::max(a.digits.size(), b.digits.size());
         
         if (len < KARATSUBA_THRESHOLD) {
             BigInteger result;
@@ -358,6 +358,7 @@ namespace Biginteger{
         }
 
         BigInteger result;
+        const size_t n = a.digits.size() + b.digits.size();
         // if (a.digits.size() < KARATSUBA_THRESHOLD || 
         //     b.digits.size() < KARATSUBA_THRESHOLD) {
         //     result = multiply_abs(a, b);
@@ -368,7 +369,12 @@ namespace Biginteger{
         //     // result = karatsuba(a, b);
         //     result = FFT_multiply(a, b);
         // }
-        result = FFT_multiply(a, b);
+        if (n < FFT_THRESHOLD) {
+            result = multiply_abs(a, b);
+        }else {
+            result = FFT_multiply(a, b);
+        }
+
 
         result.is_negative = a.is_negative != b.is_negative;
         remove_leading_zeros(result);
@@ -380,12 +386,11 @@ namespace Biginteger{
     }
 
     void fft(std::vector<std::complex<double>>& a, bool inv){
-        int n = a.size();
+        const int n = a.size();
         if (n == 1) {
             return;
         }
-        
-        //分治
+
         std::vector<std::complex<double>> a0(n / 2), a1(n / 2);
         for (int i = 0, j = 0; i < n; i += 2, j++) {
             a0[j] = a[i];
@@ -395,8 +400,9 @@ namespace Biginteger{
         fft(a1, inv);
         
         //FFT
-        double angle = 2 * PI / n * (inv ? -1 : 1);
-        std::complex<double> w(1), wn(cos(angle), sin(angle));
+        const double angle = 2 * PI / n * (inv ? -1 : 1);
+        std::complex<double> w(1.0, 0.0);
+        const std::complex<double> wn(cos(angle), sin(angle));
         for (int i = 0; i < n / 2; i++) {
             a[i] = a0[i] + w * a1[i];
             a[i + n / 2] = a0[i] - w * a1[i];
@@ -497,41 +503,33 @@ namespace Biginteger{
     const BigInteger BigIntegerZero = from_longlong(0);
 
     BigInteger divide(const BigInteger& dividend, const BigInteger& divisor, BigInteger& remainder) {
-        // 处理除数为零的情况
         if (compare_abs(divisor, BigIntegerZero) == 0) {
             throw std::invalid_argument("Division by zero");
         }
 
-        // 确定符号
         bool quotient_negative = dividend.is_negative != divisor.is_negative;
         BigInteger a = absolute(dividend);
         BigInteger b = absolute(divisor);
 
-        // 特殊情况处理：被除数小于除数
         if (compare_abs(a, b) < 0) {
             remainder = a;
             remainder.is_negative = dividend.is_negative;
             return BigIntegerZero;
         }
 
-        // 将a和b的digits转为高位在前
         std::vector<int> a_digits_high(a.digits.rbegin(), a.digits.rend());
         std::vector<int> b_digits_high(b.digits.rbegin(), b.digits.rend());
 
         std::vector<int> quotient_digits_high;
         remainder = BigIntegerZero;
 
-        // 逐位处理被除数
         for (int digit : a_digits_high) {
-            // 余数 = 余数 * 10 + 当前位
             remainder.digits.insert(remainder.digits.begin(), 0); // 乘以10
             remainder.digits[0] = digit; // 加当前位
             remove_leading_zeros(remainder);
 
-            // 确定商的当前位
             int q = 0;
             if (compare_abs(remainder, b) >= 0) {
-                // 二分法寻找最大q使得 b * q <= remainder
                 int low = 0, high = 9;
                 while (low <= high) {
                     int mid = (low + high) / 2;
@@ -543,15 +541,13 @@ namespace Biginteger{
                         high = mid - 1;
                     }
                 }
-                // 更新余数
                 BigInteger product = multiply_abs(b, from_longlong(q));
                 remainder = sub_abs(remainder, product);
             }
             quotient_digits_high.push_back(q);
         }
 
-        // 去除商的前导零
-        reverse(quotient_digits_high.begin(), quotient_digits_high.end());
+        std::ranges::reverse(quotient_digits_high);
         // while (quotient_digits_high.size() > 1 && quotient_digits_high.back() == 0) {
         //     quotient_digits_high.pop_back();
         // }
@@ -579,4 +575,196 @@ namespace Biginteger{
         return remainder;
     }
 
+    BigInteger multiply_by_10(const BigInteger& num) {
+        BigInteger result = num;
+        result.digits.insert(result.digits.begin(), 0);
+        remove_leading_zeros(result);
+        return result;
+    }
+
+    std::string divide_decimal(const BigInteger& a, const BigInteger& b, int precision) {
+        if (compare_abs(b, BigIntegerZero) == 0) {
+            throw std::invalid_argument("Division by zero");
+        }
+
+        bool result_negative = a.is_negative != b.is_negative;
+
+        BigInteger a_abs = absolute(a);
+        BigInteger b_abs = absolute(b);
+
+        BigInteger quotient, remainder;
+        quotient = divide(a_abs, b_abs, remainder);
+
+        std::string result;
+
+        if (result_negative && !(quotient.digits.size() == 1 && quotient.digits[0] == 0 && remainder.digits.size() == 1 && remainder.digits[0] == 0)) {
+            result += "-";
+        }
+
+        result += to_string(quotient);
+
+        if (!(remainder.digits.size() == 1 && remainder.digits[0] == 0) && precision > 0) {
+            result += ".";
+
+            BigInteger remainder_abs = absolute(remainder);
+
+            for (int i = 0; i < precision; ++i) {
+                remainder_abs = multiply_by_10(remainder_abs);
+                BigInteger temp_quotient, temp_remainder;
+                temp_quotient = divide(remainder_abs, b_abs, temp_remainder);
+                result += to_string(temp_quotient);
+                remainder_abs = temp_remainder;
+
+                if (remainder_abs.digits.size() == 1 && remainder_abs.digits[0] == 0) {
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+    BigInteger integer_divide(const BigInteger& a, const BigInteger& b) {
+        BigInteger rem;
+        return divide(a, b, rem); // 直接返回商部分
+    }
+
+    // 求和函数
+    BigInteger sum(const std::vector<BigInteger>& nums) {
+        if (nums.empty()) return from_longlong(0);
+        BigInteger total = nums[0];
+        for (size_t i = 1; i < nums.size(); ++i) {
+            total = total + nums[i];
+        }
+        return total;
+    }
+
+    // 最大值函数
+    BigInteger max(const std::vector<BigInteger>& nums) {
+        if (nums.empty()) throw std::invalid_argument("max() requires at least one argument");
+        BigInteger current_max = nums[0];
+        for (const auto& num : nums) {
+            if (num > current_max) current_max = num;
+        }
+        return current_max;
+    }
+
+    // 解析参数列表（支持嵌套表达式）
+    std::vector<BigInteger> parse_argument_list(const std::vector<std::string>& tokens, size_t& index) {
+        std::vector<BigInteger> args;
+        if (tokens[index] != "(") throw std::invalid_argument("Expected '('");
+        ++index;
+        while (tokens[index] != ")") {
+            args.push_back(eval(tokens, index));
+            if (tokens[index] == ",") ++index;
+        }
+        ++index; // 跳过 ")"
+        return args;
+    }
+
+    // 解析函数调用（如 sum(1, 2)）
+    BigInteger parse_function_call(const std::string& func_name, const std::vector<std::string>& tokens, size_t& index) {
+        if (func_name == "sum") {
+            auto args = parse_argument_list(tokens, index);
+            return sum(args);
+        } else if (func_name == "max") {
+            auto args = parse_argument_list(tokens, index);
+            return max(args);
+        } else {
+            throw std::invalid_argument("Unknown function: " + func_name);
+        }
+    }
+
+    // 解析基本元素（数字、括号、函数）
+    BigInteger parse_primary(const std::vector<std::string>& tokens, size_t& index) {
+        if (tokens[index] == "(") {
+            ++index;
+            auto val = eval(tokens, index);
+            if (tokens[index] != ")") throw std::invalid_argument("Expected ')'");
+            ++index;
+            return val;
+        } else if (isdigit(tokens[index][0]) || tokens[index][0] == '-') { // 数字
+            return from_string(tokens[index++]);
+        } else if (isalpha(tokens[index][0])) { // 函数调用
+            std::string func_name = tokens[index++];
+            return parse_function_call(func_name, tokens, index);
+        } else {
+            throw std::invalid_argument("Unexpected token: " + tokens[index]);
+        }
+    }
+
+    // 解析乘除、整除
+    BigInteger parse_term(const std::vector<std::string>& tokens, size_t& index) {
+        auto left = parse_primary(tokens, index);
+        while (index < tokens.size()) {
+            std::string op = tokens[index];
+            if (op == "*" || op == "/" || op == "//") {
+                ++index;
+                auto right = parse_primary(tokens, index);
+                if (op == "*") {
+                    left = left * right;
+                } else if (op == "/") {
+                    left = divide_decimal(left, right, 10); // 默认保留10位小数
+                } else if (op == "//") {
+                    left = integer_divide(left, right);
+                }
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    // 解析加减
+    BigInteger parse_expr(const std::vector<std::string>& tokens, size_t& index) {
+        auto left = parse_term(tokens, index);
+        while (index < tokens.size()) {
+            std::string op = tokens[index];
+            if (op == "+" || op == "-") {
+                ++index;
+                auto right = parse_term(tokens, index);
+                left = (op == "+") ? (left + right) : (left - right);
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    // 主解析函数
+    BigInteger eval(const std::vector<std::string>& tokens, size_t& index) {
+        return parse_expr(tokens, index);
+    }
+
+    // 公开的表达式解析接口
+    BigInteger evaluate_expression(const std::string& expr) {
+        // 分词处理（支持复杂表达式）
+        std::vector<std::string> tokens;
+        std::string token;
+        for (char c : expr) {
+            if (isspace(c)) {
+                if (!token.empty()) {
+                    tokens.push_back(token);
+                    token.clear();
+                }
+            } else if (c == '(' || c == ')' || c == ',') {
+                if (!token.empty()) {
+                    tokens.push_back(token);
+                    token.clear();
+                }
+                tokens.push_back(std::string(1, c));
+            } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+                if (!token.empty()) {
+                    tokens.push_back(token);
+                    token.clear();
+                }
+                tokens.push_back(std::string(1, c));
+            } else {
+                token += c;
+            }
+        }
+        if (!token.empty()) tokens.push_back(token);
+
+        size_t index = 0;
+        return eval(tokens, index);
+    }
 }
